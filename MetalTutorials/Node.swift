@@ -15,6 +15,8 @@ class Node {
     var rotationZ: Float = 0.5
     var scale: Float     = 1.0
     
+    let light = Light(color: (1.0,1.0,1.0), ambientIntensity: 0.1, direction: (0.0, 0.0, 1.0), diffuseIntensity: 0.8, shininess: 10, specularIntensity: 2)
+    
     var bufferProvider: BufferProvider
     
     var texture: MTLTexture
@@ -22,7 +24,7 @@ class Node {
     
     init(name: String, vertices: Array<Vertex>, device: MTLDevice, texture: MTLTexture) {
         var vertexData = Array<Float>()
-        for vertex in vertices {
+        for vertex in vertices{
             vertexData += vertex.floatBuffer()
         }
         
@@ -34,9 +36,8 @@ class Node {
         vertexCount = vertices.count
         self.texture = texture
         
-        self.bufferProvider = BufferProvider(device: device,
-                                             inflightBuffersCount: 3,
-                                             sizeOfUniformsBuffer: MemoryLayout<Float>.size * Matrix4.numberOfElements() * 2)
+        let sizeOfUniformsBuffer = MemoryLayout<Float>.size * Matrix4.numberOfElements() * 2 + Light.size()
+        self.bufferProvider = BufferProvider(device: device, inflightBuffersCount: 3, sizeOfUniformsBuffer: sizeOfUniformsBuffer)
     }
     
     func modelMatrix() -> Matrix4 {
@@ -55,7 +56,7 @@ class Node {
         let renderPassDescriptor = MTLRenderPassDescriptor()
         renderPassDescriptor.colorAttachments[0].texture = drawable.texture
         renderPassDescriptor.colorAttachments[0].loadAction = .clear
-        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.0, green: 104.0 / 255.0, blue: 5.0 / 255.0, alpha: 1.0)
+        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
         renderPassDescriptor.colorAttachments[0].storeAction = .store
         
         let commandBuffer = commandQueue.makeCommandBuffer()
@@ -69,16 +70,18 @@ class Node {
         renderEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         
         renderEncoder?.setFragmentTexture(texture, index: 0)
-        if let samplerState = samplerState{
+        if let samplerState = samplerState {
             renderEncoder?.setFragmentSamplerState(samplerState, index: 0)
         }
         
         let nodeModelMatrix = self.modelMatrix()
         nodeModelMatrix.multiplyLeft(parentModelViewMatrix)
         
-        let uniformBuffer = bufferProvider.nextUniformsBuffer(projectionMatrix: projectionMatrix, modelViewMatrix: nodeModelMatrix)
+        let uniformBuffer = bufferProvider.nextUniformsBuffer(projectionMatrix: projectionMatrix, modelViewMatrix: nodeModelMatrix, light: light)
         
         renderEncoder?.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
+        renderEncoder?.setFragmentBuffer(uniformBuffer, offset: 0, index: 1)
+        
         renderEncoder?.drawPrimitives(type: MTLPrimitiveType.triangle, vertexStart: 0, vertexCount: vertexCount, instanceCount: vertexCount / 3)
         renderEncoder?.endEncoding()
         

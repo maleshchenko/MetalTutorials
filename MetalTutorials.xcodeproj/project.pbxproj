@@ -10,6 +10,7 @@
 		021BB81B22C9227700B8B8E6 /* Matrix4.h in Sources */ = {isa = PBXBuildFile; fileRef = 021BB81A22C9227700B8B8E6 /* Matrix4.h */; };
 		021BB81D22C922F600B8B8E6 /* Matrix4.m in Sources */ = {isa = PBXBuildFile; fileRef = 021BB81C22C922F600B8B8E6 /* Matrix4.m */; };
 		021BB81F22C92A1400B8B8E6 /* MetalTexture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021BB81E22C92A1400B8B8E6 /* MetalTexture.swift */; };
+		029EAEBC22C9325A006838F9 /* Light.swift in Sources */ = {isa = PBXBuildFile; fileRef = 029EAEBB22C9325A006838F9 /* Light.swift */; };
 		02A891DA22C91C65002DC4E5 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A891D922C91C65002DC4E5 /* AppDelegate.swift */; };
 		02A891DC22C91C65002DC4E5 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A891DB22C91C65002DC4E5 /* ViewController.swift */; };
 		02A891DF22C91C65002DC4E5 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 02A891DD22C91C65002DC4E5 /* Main.storyboard */; };
@@ -29,6 +30,7 @@
 		021BB81A22C9227700B8B8E6 /* Matrix4.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Matrix4.h; sourceTree = "<group>"; };
 		021BB81C22C922F600B8B8E6 /* Matrix4.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Matrix4.m; sourceTree = "<group>"; };
 		021BB81E22C92A1400B8B8E6 /* MetalTexture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalTexture.swift; sourceTree = "<group>"; };
+		029EAEBB22C9325A006838F9 /* Light.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Light.swift; sourceTree = "<group>"; };
 		02A891D622C91C65002DC4E5 /* MetalTutorials.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MetalTutorials.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02A891D922C91C65002DC4E5 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		02A891DB22C91C65002DC4E5 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -76,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				02A891F122C921DA002DC4E5 /* Vertex.swift */,
+				029EAEBB22C9325A006838F9 /* Light.swift */,
 				021BB81E22C92A1400B8B8E6 /* MetalTexture.swift */,
 				021BB81A22C9227700B8B8E6 /* Matrix4.h */,
 				021BB81C22C922F600B8B8E6 /* Matrix4.m */,
@@ -175,6 +178,7 @@
 				02A891EC22C9211F002DC4E5 /* Cube.swift in Sources */,
 				021BB81B22C9227700B8B8E6 /* Matrix4.h in Sources */,
 				021BB81F22C92A1400B8B8E6 /* MetalTexture.swift in Sources */,
+				029EAEBC22C9325A006838F9 /* Light.swift in Sources */,
 				02A891EE22C9214E002DC4E5 /* Node.swift in Sources */,
 				021BB81D22C922F600B8B8E6 /* Matrix4.m in Sources */,
 				02A891F022C921B3002DC4E5 /* Shaders.metal in Sources */,
