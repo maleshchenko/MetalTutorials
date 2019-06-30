@@ -1,5 +1,3 @@
-import QuartzCore
-
 class Node {
     
     let device: MTLDevice
@@ -17,9 +15,14 @@ class Node {
     var rotationZ: Float = 0.5
     var scale: Float     = 1.0
     
-    init(name: String, vertices: Array<Vertex>, device: MTLDevice) {
+    var bufferProvider: BufferProvider
+    
+    var texture: MTLTexture
+    lazy var samplerState: MTLSamplerState? = Node.defaultSampler(device: self.device)
+    
+    init(name: String, vertices: Array<Vertex>, device: MTLDevice, texture: MTLTexture) {
         var vertexData = Array<Float>()
-        for vertex in vertices{
+        for vertex in vertices {
             vertexData += vertex.floatBuffer()
         }
         
@@ -29,6 +32,11 @@ class Node {
         self.name = name
         self.device = device
         vertexCount = vertices.count
+        self.texture = texture
+        
+        self.bufferProvider = BufferProvider(device: device,
+                                             inflightBuffersCount: 3,
+                                             sizeOfUniformsBuffer: MemoryLayout<Float>.size * Matrix4.numberOfElements() * 2)
     }
     
     func modelMatrix() -> Matrix4 {
@@ -42,6 +50,8 @@ class Node {
     
     func render(commandQueue: MTLCommandQueue, pipelineState: MTLRenderPipelineState, drawable: CAMetalDrawable, parentModelViewMatrix: Matrix4, projectionMatrix: Matrix4, clearColor: MTLClearColor?) {
         
+        _ = bufferProvider.avaliableResourcesSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
         let renderPassDescriptor = MTLRenderPassDescriptor()
         renderPassDescriptor.colorAttachments[0].texture = drawable.texture
         renderPassDescriptor.colorAttachments[0].loadAction = .clear
@@ -49,20 +59,24 @@ class Node {
         renderPassDescriptor.colorAttachments[0].storeAction = .store
         
         let commandBuffer = commandQueue.makeCommandBuffer()
+        commandBuffer?.addCompletedHandler { (_) in
+            self.bufferProvider.avaliableResourcesSemaphore.signal()
+        }
         
         let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
         renderEncoder?.setCullMode(MTLCullMode.front)
         renderEncoder?.setRenderPipelineState(pipelineState)
         renderEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         
+        renderEncoder?.setFragmentTexture(texture, index: 0)
+        if let samplerState = samplerState{
+            renderEncoder?.setFragmentSamplerState(samplerState, index: 0)
+        }
+        
         let nodeModelMatrix = self.modelMatrix()
         nodeModelMatrix.multiplyLeft(parentModelViewMatrix)
         
-        let uniformBuffer = device.makeBuffer(length: MemoryLayout<Float>.size * Matrix4.numberOfElements() * 2, options: [])
-        let bufferPointer = uniformBuffer?.contents()
-        
-        memcpy(bufferPointer, nodeModelMatrix.raw(), MemoryLayout<Float>.size * Matrix4.numberOfElements())
-        memcpy(bufferPointer! + MemoryLayout<Float>.size * Matrix4.numberOfElements(), projectionMatrix.raw(), MemoryLayout<Float>.size * Matrix4.numberOfElements())
+        let uniformBuffer = bufferProvider.nextUniformsBuffer(projectionMatrix: projectionMatrix, modelViewMatrix: nodeModelMatrix)
         
         renderEncoder?.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
         renderEncoder?.drawPrimitives(type: MTLPrimitiveType.triangle, vertexStart: 0, vertexCount: vertexCount, instanceCount: vertexCount / 3)
@@ -74,5 +88,21 @@ class Node {
     
     func updateWithDelta(delta: CFTimeInterval) {
         time += delta
+    }
+    
+    class func defaultSampler(device: MTLDevice) -> MTLSamplerState {
+        let sampler = MTLSamplerDescriptor()
+        sampler.minFilter             = MTLSamplerMinMagFilter.nearest
+        sampler.magFilter             = MTLSamplerMinMagFilter.nearest
+        sampler.mipFilter             = MTLSamplerMipFilter.nearest
+        sampler.maxAnisotropy         = 1
+        sampler.sAddressMode          = MTLSamplerAddressMode.clampToEdge
+        sampler.tAddressMode          = MTLSamplerAddressMode.clampToEdge
+        sampler.rAddressMode          = MTLSamplerAddressMode.clampToEdge
+        sampler.normalizedCoordinates = true
+        sampler.lodMinClamp           = 0
+        sampler.lodMaxClamp           = .greatestFiniteMagnitude
+        
+        return device.makeSamplerState(descriptor: sampler)!
     }
 }
