@@ -1,15 +1,23 @@
+import UIKit
+import Metal
+import GLKit
+
 class ViewController: UIViewController {
     var device: MTLDevice!
     var metalLayer: CAMetalLayer!
     var objectToDraw: Cube!
+    var projectionMatrix: Matrix4!
     var pipelineState: MTLRenderPipelineState!
     var commandQueue: MTLCommandQueue!
     var timer: CADisplayLink!
+    var lastFrameTimestamp: CFTimeInterval = 0.0
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         device = MTLCreateSystemDefaultDevice()
+        
+        projectionMatrix = Matrix4.makePerspectiveViewAngle(Matrix4.degrees(toRad: 85.0), aspectRatio: Float(self.view.bounds.size.width / self.view.bounds.size.height), nearZ: 0.01, farZ: 100.0)
         
         metalLayer = CAMetalLayer()
         metalLayer.device = device
@@ -19,10 +27,6 @@ class ViewController: UIViewController {
         view.layer.addSublayer(metalLayer)
         
         objectToDraw = Cube(device: device)
-        objectToDraw.positionX = 0.0
-        objectToDraw.positionY = 0.0
-        objectToDraw.positionZ = 0.0
-        objectToDraw.scale = 0.25
         
         let defaultLibrary = device.makeDefaultLibrary()!
         let fragmentProgram = defaultLibrary.makeFunction(name: "basic_fragment")
@@ -37,16 +41,34 @@ class ViewController: UIViewController {
         
         commandQueue = device.makeCommandQueue()
         
-        timer = CADisplayLink(target: self, selector: #selector(gameloop))
-        timer.add(to: RunLoop.main, forMode: .default)
+        timer = CADisplayLink(target: self, selector: #selector(ViewController.newFrame(displayLink:)))
+        timer.add(to: RunLoop.main, forMode: RunLoop.Mode.default)
     }
     
     func render() {
         guard let drawable = metalLayer?.nextDrawable() else { return }
-        objectToDraw.render(commandQueue: commandQueue, pipelineState: pipelineState, drawable: drawable, clearColor: nil)
+        let worldModelMatrix = Matrix4()
+        worldModelMatrix.translate(0.0, y: 0.0, z: -7.0)
+        worldModelMatrix.rotateAroundX(Matrix4.degrees(toRad: 25), y: 0.0, z: 0.0)
+        
+        objectToDraw.render(commandQueue: commandQueue, pipelineState: pipelineState, drawable: drawable, parentModelViewMatrix: worldModelMatrix, projectionMatrix: projectionMatrix, clearColor: nil)
     }
     
-    @objc func gameloop() {
+    @objc func newFrame(displayLink: CADisplayLink){
+        
+        if lastFrameTimestamp == 0.0 {
+            lastFrameTimestamp = displayLink.timestamp
+        }
+        
+        let elapsed: CFTimeInterval = displayLink.timestamp - lastFrameTimestamp
+        lastFrameTimestamp = displayLink.timestamp
+        
+        gameloop(timeSinceLastUpdate: elapsed)
+    }
+    
+    @objc func gameloop(timeSinceLastUpdate: CFTimeInterval) {
+        objectToDraw.updateWithDelta(delta: timeSinceLastUpdate)
+        
         autoreleasepool {
             self.render()
         }
